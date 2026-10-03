@@ -154,26 +154,26 @@ atreve a borrarlo más adelante porque ya no queda claro si todavía
 cumple alguna función, y el historial de Git — no el código fuente
 activo — es el lugar correcto para conservar esa referencia.
 
-## Evidencia de ejecución — comparación antes/después
+## Evidencia de ejecución
 
-Los cinco pedidos de prueba de la Parte 1 (`GestorPedidosTest`) se
-ejecutaron contra el `GestorPedidos` original (commit
-`648400a`) y, sin modificar sus aserciones, contra la versión
-refactorizada con Chain of Responsibility y Strategy (commit
-`dd7bcb0`): ambos devuelven exactamente el mismo resultado
-(confirmación/rechazo, descuento aplicado y total) para cada uno de
-los cinco casos — stock insuficiente, cliente moroso dentro y fuera
-del horario de corte, cliente inexistente, descuento VIP y descuento
-FRECUENTE.
+Los 8 tests automatizados (`GestorPedidosTest` y `CampanaBlackFridayTest`)
+verifican, contra la versión final del código, que el sistema en capas
+(Chain of Responsibility + Strategy) y la corrección de Golden Hammer
+producen el comportamiento de negocio esperado para cada caso: rechazo
+por stock insuficiente, rechazo por cliente moroso o no registrado, y
+el descuento correcto para cada tipo de cliente y cada campaña
+promocional (VIP 15%, Frecuente 8%, Black Friday 25%, Corporativo 10%,
+Volumen 12%), incluyendo que el sistema aplica siempre el mayor
+descuento disponible entre tipo de cliente y campañas activas.
 
-De la misma forma, los tres pedidos nuevos de la Parte 2 (Black
-Friday, cliente corporativo, pedido de volumen) se ejecutaron primero
-contra la versión con los tres eslabones de Golden Hammer (commit
-`4f3a886`) y después contra `CalculadorDescuentoFinal` (commit de esta
-corrección): el descuento y el total resultante son
-idénticos en ambas versiones para los tres casos, confirmando que la
-corrección de diseño no cambió el comportamiento observable del
-sistema — solo su estructura interna.
+Durante el desarrollo se corrigieron tres errores que la ejecución real
+expuso y que no eran visibles solo leyendo el código: la cadena de
+validación no arrancaba en `ValidadorStock` por un uso incorrecto del
+valor de retorno de `encadenar()`, `CALL IDENTITY()` no existe en la
+versión de H2 que usa este proyecto, y los primeros tests de las
+campañas promocionales no aislaban correctamente su propio descuento
+frente a Black Friday. Los tres se corrigieron sin modificar ninguna
+decisión de diseño documentada arriba (ver commit `9a573ce`).
 
 ## Cómo ejecutar
 
