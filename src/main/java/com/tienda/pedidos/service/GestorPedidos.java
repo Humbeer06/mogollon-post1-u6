@@ -5,16 +5,19 @@ import com.tienda.pedidos.dto.PedidoRequest;
 import com.tienda.pedidos.dto.ResultadoPedido;
 import com.tienda.pedidos.descuento.SelectorEstrategiaDescuento;
 import com.tienda.pedidos.validacion.ContextoPedido;
+import com.tienda.pedidos.validacion.PromocionBlackFriday;
+import com.tienda.pedidos.validacion.PromocionCorporativo;
+import com.tienda.pedidos.validacion.PromocionVolumen;
 import com.tienda.pedidos.validacion.ValidadorCliente;
 import com.tienda.pedidos.validacion.ValidadorPedido;
 import com.tienda.pedidos.validacion.ValidadorStock;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
-// Orquestador delgado: coordina las cuatro capas (validacion, descuento,
-// persistencia, notificacion) sin conocer sus detalles internos. Ya no
-// contiene SQL embebido ni reglas de negocio propias (ver README,
-// Decisiones de diseno - Parte 1).
+// GestorPedidos ahora encadena 5 eslabones (2 de validacion real + 3 de "promocion")
+// y combina el descuento de Strategy con el descuentoCampana escrito por la cadena.
+// Este es el estado ANTES de corregir el antipatron de la Parte 2 -- ver diagnostico
+// de Golden Hammer en el README.
 @Service
 public class GestorPedidos {
 
@@ -25,9 +28,12 @@ public class GestorPedidos {
     private final JdbcTemplate jdbcTemplate;
 
     public GestorPedidos(ValidadorStock stock, ValidadorCliente cliente,
-                          SelectorEstrategiaDescuento selector, PedidoRepository repository,
-                          NotificacionPedidoService notificacion, JdbcTemplate jdbcTemplate) {
-        this.primerValidador = stock.encadenar(cliente);
+                          PromocionBlackFriday blackFriday, PromocionCorporativo corporativo,
+                          PromocionVolumen volumen, SelectorEstrategiaDescuento selector,
+                          PedidoRepository repository, NotificacionPedidoService notificacion,
+                          JdbcTemplate jdbcTemplate) {
+        this.primerValidador = stock.encadenar(cliente)
+            .encadenar(blackFriday).encadenar(corporativo).encadenar(volumen);
         this.selector = selector;
         this.repository = repository;
         this.notificacion = notificacion;
@@ -48,7 +54,8 @@ public class GestorPedidos {
         double subtotal = calcularSubtotal(request);
         contexto.setSubtotal(subtotal);
 
-        double descuento = selector.seleccionar(contexto.getTipoCliente()).calcular(contexto);
+        double descuentoTipoCliente = selector.seleccionar(contexto.getTipoCliente()).calcular(contexto);
+        double descuento = Math.max(descuentoTipoCliente, contexto.getDescuentoCampana());
         double impuesto = (subtotal - subtotal * descuento) * 0.19;
         double total = subtotal - (subtotal * descuento) + impuesto;
 
@@ -57,8 +64,6 @@ public class GestorPedidos {
         return ResultadoPedido.confirmado(pedidoId, total);
     }
 
-    // Calculo de subtotal: se mantiene como metodo privado de calculo puro,
-    // con una unica consulta por item, sin mezclarse con ninguna otra regla.
     private double calcularSubtotal(PedidoRequest request) {
         double subtotal = 0;
         for (ItemPedido item : request.getItems()) {

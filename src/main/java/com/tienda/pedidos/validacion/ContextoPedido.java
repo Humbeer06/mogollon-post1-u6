@@ -9,8 +9,14 @@ public class ContextoPedido {
     private double subtotal;
     private boolean rechazado = false;
     private String motivoRechazo;
+    private double descuentoCampana = 0;
 
     public ContextoPedido(PedidoRequest request) { this.request = request; }
+
+    public double getDescuentoCampana() { return descuentoCampana; }
+    public void aplicarDescuentoCampana(double valor) {
+        if (valor > this.descuentoCampana) this.descuentoCampana = valor; // el mayor descuento gana
+    }
 
     public PedidoRequest getRequest() { return request; }
     public String getTipoCliente() { return tipoCliente; }
