@@ -2,21 +2,18 @@ package com.tienda.pedidos.validacion;
 
 import com.tienda.pedidos.dto.PedidoRequest;
 
-// Contexto mutable que viaja a traves de la cadena de validacion
+// Contexto mutable que viaja a traves de la cadena de validacion. El campo
+// descuentoCampana (usado por el Golden Hammer de la Parte 2) se elimino
+// por completo al corregir -- las campañas ahora son EstrategiaDescuento,
+// que no necesitan escribir en el contexto de validacion.
 public class ContextoPedido {
     private final PedidoRequest request;
     private String tipoCliente;
     private double subtotal;
     private boolean rechazado = false;
     private String motivoRechazo;
-    private double descuentoCampana = 0;
 
     public ContextoPedido(PedidoRequest request) { this.request = request; }
-
-    public double getDescuentoCampana() { return descuentoCampana; }
-    public void aplicarDescuentoCampana(double valor) {
-        if (valor > this.descuentoCampana) this.descuentoCampana = valor; // el mayor descuento gana
-    }
 
     public PedidoRequest getRequest() { return request; }
     public String getTipoCliente() { return tipoCliente; }
