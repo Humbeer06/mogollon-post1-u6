@@ -12,13 +12,11 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-// Cinco pedidos de prueba que ejercitan las tres rutas de validacion
-// (stock insuficiente, cliente moroso dentro y fuera del horario de corte,
-// cliente inexistente) y los dos tipos de descuento (VIP, FRECUENTE).
-// Se ejecutan contra el GestorPedidos original en la Parte 1 y, sin
-// modificarse, contra la version refactorizada, para verificar que el
-// resultado es equivalente (ver Paso 8 y seccion "Evidencia de ejecucion"
-// del README).
+// Tests que verifican el comportamiento de negocio esperado del sistema en
+// capas final: rutas de validacion (stock insuficiente, cliente moroso,
+// cliente no registrado) y descuentos por tipo de cliente (VIP, FRECUENTE)
+// y por campana (Corporativo, Volumen), con Black Friday desactivada
+// (ver CampanaBlackFridayTest y seccion "Evidencia de ejecución" del README).
 @SpringBootTest
 class GestorPedidosTest {
 
