@@ -28,7 +28,8 @@ public class GestorPedidos {
     public GestorPedidos(ValidadorStock stock, ValidadorCliente cliente,
                           CalculadorDescuentoFinal calculadorDescuento, PedidoRepository repository,
                           NotificacionPedidoService notificacion, JdbcTemplate jdbcTemplate) {
-        this.primerValidador = stock.encadenar(cliente);
+        stock.encadenar(cliente);
+        this.primerValidador = stock;
         this.calculadorDescuento = calculadorDescuento;
         this.repository = repository;
         this.notificacion = notificacion;

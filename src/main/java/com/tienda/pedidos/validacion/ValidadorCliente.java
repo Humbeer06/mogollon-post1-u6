@@ -1,5 +1,6 @@
 package com.tienda.pedidos.validacion;
 
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -17,8 +18,13 @@ public class ValidadorCliente extends ValidadorPedido {
     @Override
     protected void ejecutar(ContextoPedido contexto) {
         Long clienteId = contexto.getRequest().getClienteId();
-        String tipo = jdbcTemplate.queryForObject(
-            "SELECT tipo_cliente FROM clientes WHERE id = ?", String.class, clienteId);
+        String tipo;
+        try {
+            tipo = jdbcTemplate.queryForObject(
+                "SELECT tipo_cliente FROM clientes WHERE id = ?", String.class, clienteId);
+        } catch (EmptyResultDataAccessException e) {
+            tipo = null;
+        }
         if (tipo == null) {
             contexto.rechazar("Cliente no registrado");
             return;

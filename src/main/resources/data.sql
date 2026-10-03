@@ -11,7 +11,7 @@ INSERT INTO productos (id, nombre, precio) VALUES (3, 'Monitor 24 pulgadas', 700
 
 INSERT INTO inventario (producto_id, stock) VALUES (1, 50);
 INSERT INTO inventario (producto_id, stock) VALUES (2, 100);
-INSERT INTO inventario (producto_id, stock) VALUES (3, 3);
+INSERT INTO inventario (producto_id, stock) VALUES (3, 8);
 
 -- Cliente 3 (Moroso SA) tiene una factura pendiente
 INSERT INTO facturas (cliente_id, monto, pagada) VALUES (3, 250000, false);

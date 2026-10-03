@@ -2,8 +2,11 @@ package com.tienda.pedidos.service;
 
 import com.tienda.pedidos.validacion.ContextoPedido;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
+import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
@@ -16,12 +19,21 @@ public class PedidoRepository {
     }
 
     public Long guardar(ContextoPedido contexto, double descuento, double impuesto, double total) {
-        jdbcTemplate.update(
-            "INSERT INTO pedidos (cliente_id, subtotal, descuento, impuesto, total, fecha, estado) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?)",
-            contexto.getRequest().getClienteId(), contexto.getSubtotal(), descuento, impuesto, total,
-            Timestamp.valueOf(LocalDateTime.now()), "CONFIRMADO");
-        Long pedidoId = jdbcTemplate.queryForObject("CALL IDENTITY()", Long.class);
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcTemplate.update(connection -> {
+            PreparedStatement ps = connection.prepareStatement(
+                "INSERT INTO pedidos (cliente_id, subtotal, descuento, impuesto, total, fecha, estado) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?)", new String[] {"id"});
+            ps.setLong(1, contexto.getRequest().getClienteId());
+            ps.setDouble(2, contexto.getSubtotal());
+            ps.setDouble(3, descuento);
+            ps.setDouble(4, impuesto);
+            ps.setDouble(5, total);
+            ps.setTimestamp(6, Timestamp.valueOf(LocalDateTime.now()));
+            ps.setString(7, "CONFIRMADO");
+            return ps;
+        }, keyHolder);
+        Long pedidoId = keyHolder.getKey().longValue();
         for (var item : contexto.getRequest().getItems()) {
             jdbcTemplate.update(
                 "INSERT INTO detalle_pedido (pedido_id, producto_id, cantidad) VALUES (?, ?, ?)",
