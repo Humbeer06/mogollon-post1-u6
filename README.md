@@ -89,9 +89,49 @@ un orquestador de ~70 líneas que delega cada responsabilidad a su
 propia clase (`PedidoRepository` para persistencia,
 `NotificacionPedidoService` para notificación).
 
-### Parte 2
+### Parte 2 — Crecimiento del proyecto: tres campañas de descuento
 
-*(Se completa con el diagnóstico del segundo antipatrón más abajo.)*
+**Contexto:** dos semanas después de cerrada la Parte 1, se agregaron
+tres campañas de descuento (`PromocionBlackFriday`,
+`PromocionCorporativo`, `PromocionVolumen`) como tres eslabones
+nuevos de la misma cadena `ValidadorPedido` que ya tenía
+`ValidadorStock` y `ValidadorCliente`.
+
+**Antipatrón identificado:** Golden Hammer. La evidencia concreta:
+
+- Ninguna de las tres clases nuevas tiene una dependencia de orden
+  real entre sí, ni con `ValidadorStock`/`ValidadorCliente`: evaluar
+  `PromocionVolumen` antes que `PromocionCorporativo` no cambia el
+  resultado — a diferencia de `ValidadorStock`, que sí debe
+  ejecutarse antes que `ValidadorCliente` para evitar una consulta de
+  mora sobre un pedido que ya iba a rechazarse por falta de stock.
+- `ValidadorPedido` tiene un contrato claro ("decidir si el pedido
+  continúa o se rechaza"), pero las tres clases nuevas nunca llaman a
+  `contexto.rechazar(...)` — solo escriben en el campo compartido
+  `descuentoCampana`. Extender una clase pensada para rechazar un
+  pedido con clases que nunca rechazan nada es la señal más directa
+  de que se reutilizó la herramienta equivocada.
+- Si dos campañas necesitaran combinarse (sumar en vez de competir
+  por el máximo), el diseño actual no lo permite sin ambigüedad: las
+  tres escriben sobre el mismo campo `descuentoCampana` con
+  `aplicarDescuentoCampana`, que solo conserva el valor más alto.
+- La razón real de la elección no fue evaluar la forma del problema,
+  sino que "`ValidadorStock` y `ValidadorCliente` funcionaron muy
+  bien como `Chain of Responsibility`" — Golden Hammer es
+  exactamente esto: aplicar una solución conocida a un problema con
+  una forma distinta, sin evaluar si corresponde.
+
+**Patrón aplicado en la corrección:** Strategy, extendiendo
+`SelectorEstrategiaDescuento` con un nuevo `CalculadorDescuentoFinal`
+que combina el descuento por tipo de cliente con el de campañas (ver
+código y commits siguientes). Las tres clases `PromocionBlackFriday`,
+`PromocionCorporativo`, `PromocionVolumen` y el campo
+`descuentoCampana` se eliminan por completo del código — no se dejan
+comentadas, porque hacerlo reintroduciría el riesgo de Lava Flow
+descrito en la guía de esta unidad: nadie se atreve a borrar código
+comentado "por si acaso", y su función deja de estar clara con el
+tiempo. Su historial queda documentado únicamente en los commits de
+este repositorio.
 
 ## Herramientas utilizadas
 
