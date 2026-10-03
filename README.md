@@ -53,7 +53,45 @@ el mismo método y comparte las mismas variables locales (`subtotal`,
 
 ## Decisiones de diseño
 
-*(Se completa con el diagnóstico de la Parte 2 más abajo.)*
+### Parte 1 — `GestorPedidos`
+
+**Antipatrón identificado:** God Object y Spaghetti Code combinados
+(ver evidencia citada arriba).
+
+**Patrón aplicado:** Chain of Responsibility para las validaciones de
+stock y cliente (`ValidadorStock` → `ValidadorCliente`) y Strategy
+para el cálculo de descuento por tipo de cliente
+(`EstrategiaDescuento` con `DescuentoVip`, `DescuentoFrecuente`,
+`DescuentoEstandar`, seleccionados por `SelectorEstrategiaDescuento`).
+
+**Por qué Chain of Responsibility para las validaciones:** las dos
+validaciones tienen una dependencia real de orden y de corte
+anticipado — si `ValidadorStock` rechaza el pedido, `ValidadorCliente`
+ni siquiera debe ejecutarse (consultar su mora sería una consulta SQL
+desperdiciada sobre un pedido que ya no va a proceder). Alternativa
+descartada: un método `validarTodo()` con una lista de
+`Predicate<ContextoPedido>`, que evaluaría ambos predicados aunque el
+primero ya hubiera fallado, sin ofrecer un mecanismo real de corte
+anticipado.
+
+**Por qué Strategy y no un eslabón más de la cadena para el
+descuento:** a diferencia de las validaciones, las reglas de
+descuento no dependen de un orden de evaluación entre sí ni necesitan
+"cortar" el flujo — siempre se aplica exactamente una regla,
+determinada por el tipo de cliente. Modelarlo como un eslabón más de
+la cadena habría mezclado dos responsabilidades con propiedades
+distintas (decidir si el pedido continúa vs. calcular cuánto
+descuento recibe) en la misma jerarquía de clases.
+
+Con esta separación, `GestorPedidos` pasa de 134 líneas con SQL,
+reglas de negocio y formato de texto mezclados en un único método, a
+un orquestador de ~70 líneas que delega cada responsabilidad a su
+propia clase (`PedidoRepository` para persistencia,
+`NotificacionPedidoService` para notificación).
+
+### Parte 2
+
+*(Se completa con el diagnóstico del segundo antipatrón más abajo.)*
 
 ## Herramientas utilizadas
 
