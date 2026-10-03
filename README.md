@@ -133,7 +133,79 @@ comentado "por si acaso", y su función deja de estar clara con el
 tiempo. Su historial queda documentado únicamente en los commits de
 este repositorio.
 
+**Decisión con justificación — Strategy en vez de más eslabones de
+cadena:** se corrigió modelando las tres campañas como
+`EstrategiaDescuento` y no como validadores de la cadena existente
+porque, igual que `DescuentoVip` y `DescuentoFrecuente`, calculan un
+porcentaje sin depender de un orden de evaluación ni necesitar la
+posibilidad de "cortar" el flujo del pedido — la propiedad que sí
+tienen `ValidadorStock` y `ValidadorCliente`. La alternativa de
+mantenerlas en la cadena fue descartada explícitamente por ser la
+causa del antipatrón diagnosticado: reutilizar una herramienta
+conocida sin verificar que el nuevo problema tuviera su misma forma.
+
+**Decisión con justificación — eliminar, no comentar, el código
+descartado:** se eliminaron por completo `PromocionBlackFriday`,
+`PromocionCorporativo`, `PromocionVolumen` y el campo
+`descuentoCampana` en vez de dejarlos comentados como referencia
+histórica. Comentar código "por si se necesita después" es
+precisamente el mecanismo por el que nace un Lava Flow: nadie se
+atreve a borrarlo más adelante porque ya no queda claro si todavía
+cumple alguna función, y el historial de Git — no el código fuente
+activo — es el lugar correcto para conservar esa referencia.
+
+## Evidencia de ejecución — comparación antes/después
+
+Los cinco pedidos de prueba de la Parte 1 (`GestorPedidosTest`) se
+ejecutaron contra el `GestorPedidos` original (commit
+`648400a`) y, sin modificar sus aserciones, contra la versión
+refactorizada con Chain of Responsibility y Strategy (commit
+`dd7bcb0`): ambos devuelven exactamente el mismo resultado
+(confirmación/rechazo, descuento aplicado y total) para cada uno de
+los cinco casos — stock insuficiente, cliente moroso dentro y fuera
+del horario de corte, cliente inexistente, descuento VIP y descuento
+FRECUENTE.
+
+De la misma forma, los tres pedidos nuevos de la Parte 2 (Black
+Friday, cliente corporativo, pedido de volumen) se ejecutaron primero
+contra la versión con los tres eslabones de Golden Hammer (commit
+`4f3a886`) y después contra `CalculadorDescuentoFinal` (commit de esta
+corrección): el descuento y el total resultante son
+idénticos en ambas versiones para los tres casos, confirmando que la
+corrección de diseño no cambió el comportamiento observable del
+sistema — solo su estructura interna.
+
+## Cómo ejecutar
+
+```
+mvn spring-boot:run
+mvn test
+```
+
+La consola H2 queda disponible en `http://localhost:8080/h2-console`
+(JDBC URL `jdbc:h2:mem:pedidos_db`, usuario `sa`, sin contraseña).
+
 ## Herramientas utilizadas
 
 - Java 17, Spring Boot 3.2, Spring JDBC, H2 Database, Maven
 - Git, GitHub
+
+## Conclusiones
+
+Las dos partes de este post-contenido mostraron que un mismo patrón
+de diseño puede ser la solución correcta o un antipatrón según la
+forma real del problema, no según qué tan bien funcionó la última
+vez: Chain of Responsibility fue la elección correcta para
+`ValidadorStock` y `ValidadorCliente` porque esas dos validaciones sí
+tienen una dependencia de orden y de corte anticipado, pero esa misma
+estructura se volvió Golden Hammer en cuanto se aplicó a tres reglas
+de descuento que no comparten esa propiedad. Lo más difícil de la
+Parte 2 no fue escribir el código corregido —de hecho, es casi
+idéntico en forma a `DescuentoVip` y `DescuentoFrecuente` — sino
+reconocer que el código que ya compilaba y funcionaba correctamente
+podía, aun así, estar mal diseñado. Diagnosticar un antipatrón con
+evidencia concreta (líneas, dependencias de orden, qué contrato
+rompe una clase) resultó más útil que memorizar sus nombres, porque
+es exactamente el mismo criterio que permite distinguir, en el futuro,
+cuándo una herramienta conocida sigue siendo la adecuada y cuándo deja
+de serlo.
